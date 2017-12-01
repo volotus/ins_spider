@@ -12,7 +12,11 @@ import os
 
 
 href = "https://www.instagram.com/suntorywhisky_hibiki/"
-dir_path = '/Users/zzzz/github/ins_spider/data'
+dir_path = href[len("https://www.instagram.com/"):-1]
+
+if not os.path.exists(dir_path):
+    os.makedirs(dir_path)
+
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"}
 
@@ -24,24 +28,20 @@ dic = json.loads(js)
 
 data = dic["entry_data"]["ProfilePage"][0]["user"]["media"]
 nodes = data['nodes']
-id = nodes[0]['owner']['id']
+user_id = nodes[0]['owner']['id']
+
 
 next_var = dic["entry_data"]["ProfilePage"][0]["user"]["media"]["page_info"]["end_cursor"]
-base_url = "https://www.instagram.com/graphql/query/?query_id=17888483320059182&variables=%7B%22id%22%3A%222262449668%22%2C%22first%22%3A12%2C%22after%22%3A%22"
-
-
-
-next_url = base_url + next_var + "%22%7D"  #edit the id
+base_url = "https://www.instagram.com/graphql/query/?query_id=17888483320059182&variables=%7B%22id%22%3A%22"
+next_url = base_url + user_id + "%22%2C%22first%22%3A12%2C%22after%22%3A%22" + next_var + "%22%7D"  
 
 
 class Ins():
-    """docstring for """
     def __init__(self, href, pre_url):
         self.cur_url = href
         self.pre_url = pre_url
 
 ins = Ins(next_url, href)
-
 
 while True:
     js = requests.get(ins.cur_url, headers=headers)
@@ -60,24 +60,15 @@ while True:
     	pic_url = arr[i]['node']['display_url']
     	pic_name = os.path.split(pic_url)[1]
     	img_data = requests.get(pic_url).content
-
-
     	filepath = os.path.join(dir_path, pic_name)
 
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-        
-
         print("Start downloading.")
-
         with open(filepath, 'wb') as handler:
             handler.write(img_data)
-
         print("Done.")
 
 
     if next_info['has_next_page'] == True:
-        #print(next_info['end_cursor'])
         ins.pre_url = ins.cur_url
         ins.cur_url = base_url + next_info['end_cursor'] + "%22%7D"
     else:
